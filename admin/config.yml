@@ -6,6 +6,8 @@ backend:
   auth_endpoint: auth
   squash_merges: true
 
+local_backend: true
+
 media_folder: "images"
 public_folder: "/images"
 
