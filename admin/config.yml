@@ -2,7 +2,7 @@ backend:
   name: github
   repo: thienbach2748-svg/personal-site
   branch: main
-  base_url: https://decap-cms-oauth.vercel.app
+  base_url: https://decap-oauth-proxy.thienbach2748.workers.dev
   auth_endpoint: auth
   squash_merges: true
 
