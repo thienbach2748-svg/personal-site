@@ -1,0 +1,15 @@
+{
+  "title": "技能 & 工具",
+  "categories": [
+    {
+      "name": "销售 & 运营",
+      "color": "orange",
+      "tags": ["门店运营管理", "销售SOP制定", "零售数据分析", "团队培训带教", "客户关系管理", "库存管理", "短视频运营", "线下活动策划"]
+    },
+    {
+      "name": "工具 & 系统",
+      "color": "green",
+      "tags": ["Excel 数据分析", "PPT 汇报展示", "SPSS 统计分析", "Python Pandas", "飞书 / 钉钉", "SQL", "ECharts 可视化", "FineBI"]
+    }
+  ]
+}

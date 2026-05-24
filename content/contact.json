@@ -1,0 +1,9 @@
+{
+  "title": "联系我",
+  "subtitle": "欢迎交流零售运营 / GTM 操盘 / 销售管理",
+  "links": [
+    { "icon": "✉", "text": "OPPO 邮箱", "url": "mailto:fuzhengjie@oppo.com" },
+    { "icon": "💬", "text": "QQ 邮箱", "url": "mailto:2131465172@qq.com" },
+    { "icon": "📞", "text": "联系电话", "url": "tel:19943039565" }
+  ]
+}

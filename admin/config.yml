@@ -1,0 +1,98 @@
+backend:
+  name: github
+  repo: thienbach2748-svg/personal-site
+  branch: main
+  base_url: https://decap-cms-oauth.vercel.app
+  auth_endpoint: auth
+  squash_merges: true
+
+media_folder: "images"
+public_folder: "/images"
+
+site_url: https://thienbach2748-svg.github.io/personal-site/
+display_url: https://thienbach2748-svg.github.io/personal-site/
+
+collections:
+  - name: "hero"
+    label: "首页大图"
+    files:
+      - name: "hero_data"
+        label: "首页大图内容"
+        file: "content/hero.json"
+        fields:
+          - { label: "标签文字", name: "tag", widget: "string" }
+          - { label: "名字", name: "name", widget: "string" }
+          - { label: "打字机短语（一行一个）", name: "phrases", widget: "list", field: { label: "短语", name: "text", widget: "string" } }
+          - { label: "按钮1文字", name: "btn1Text", widget: "string" }
+          - { label: "按钮2文字", name: "btn2Text", widget: "string" }
+
+  - name: "about"
+    label: "关于我"
+    files:
+      - name: "about_data"
+        label: "关于我内容"
+        file: "content/about.json"
+        fields:
+          - { label: "标题", name: "title", widget: "string" }
+          - label: "卡片列表"
+            name: "cards"
+            widget: "list"
+            fields:
+              - { label: "图标Emoji", name: "icon", widget: "string" }
+              - { label: "卡片标题", name: "title", widget: "string" }
+              - { label: "卡片描述", name: "text", widget: "text" }
+
+  - name: "skills"
+    label: "技能标签"
+    files:
+      - name: "skills_data"
+        label: "技能标签"
+        file: "content/skills.json"
+        fields:
+          - { label: "标题", name: "title", widget: "string" }
+          - label: "分类列表"
+            name: "categories"
+            widget: "list"
+            fields:
+              - { label: "分类名", name: "name", widget: "string" }
+              - { label: "颜色(orange/green)", name: "color", widget: "select", options: ["orange", "green"] }
+              - label: "标签"
+                name: "tags"
+                widget: "list"
+                field: { label: "标签名", name: "tag", widget: "string" }
+
+  - name: "projects"
+    label: "项目作品"
+    files:
+      - name: "projects_data"
+        label: "项目作品列表"
+        file: "content/projects.json"
+        fields:
+          - { label: "标题", name: "title", widget: "string" }
+          - label: "项目列表"
+            name: "items"
+            widget: "list"
+            fields:
+              - { label: "项目标题", name: "title", widget: "string" }
+              - { label: "项目描述", name: "text", widget: "text" }
+              - label: "标签"
+                name: "tags"
+                widget: "list"
+                field: { label: "标签名", name: "tag", widget: "string" }
+
+  - name: "contact"
+    label: "联系方式"
+    files:
+      - name: "contact_data"
+        label: "联系方式内容"
+        file: "content/contact.json"
+        fields:
+          - { label: "标题", name: "title", widget: "string" }
+          - { label: "副标题", name: "subtitle", widget: "string" }
+          - label: "联系链接"
+            name: "links"
+            widget: "list"
+            fields:
+              - { label: "图标Emoji", name: "icon", widget: "string" }
+              - { label: "显示文字", name: "text", widget: "string" }
+              - { label: "链接URL", name: "url", widget: "string" }
