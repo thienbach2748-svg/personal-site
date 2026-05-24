@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>网站内容编辑器</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #FFF8F0; color: #2D1B00; min-height: 100vh; }
+:root { --orange: #FF6B2C; --green: #1EA678; --coral: #FF5E62; }
+
+/* Header */
+.header { background: linear-gradient(135deg, #FF6B2C, #FF5E62); color: #fff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+.header h1 { font-size: 1.3rem; }
+.header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.btn { padding: 10px 22px; border-radius: 50px; border: none; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.btn-save { background: #fff; color: var(--orange); }
+.btn-save:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+.btn-token { background: transparent; color: #fff; border: 2px solid rgba(255,255,255,0.5); }
+.btn-token:hover { background: rgba(255,255,255,0.15); }
+
+/* Token modal */
+.modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; align-items: center; justify-content: center; }
+.modal.show { display: flex; }
+.modal-box { background: #fff; border-radius: 16px; padding: 2rem; max-width: 460px; width: 90%; }
+.modal-box h3 { margin-bottom: 1rem; }
+.modal-box input { width: 100%; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 0.9rem; margin-bottom: 1rem; }
+.modal-box p { font-size: 0.85rem; color: #6B4E30; margin-bottom: 1rem; }
+.modal-box a { color: var(--orange); }
+
+/* Tabs */
+.tabs { display: flex; background: #fff; border-bottom: 2px solid #f0f0f0; padding: 0 1rem; overflow-x: auto; }
+.tab { padding: 12px 20px; cursor: pointer; font-weight: 600; font-size: 0.9rem; white-space: nowrap; border-bottom: 3px solid transparent; color: #999; transition: all 0.3s; }
+.tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+/* Editor */
+.editor { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+.section { display: none; }
+.section.active { display: block; }
+
+/* Form */
+.form-group { margin-bottom: 1.25rem; }
+.form-group label { display: block; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.4rem; color: #6B4E30; }
+.form-group input, .form-group textarea, .form-group select {
+  width: 100%; padding: 10px 14px; border: 2px solid #e8e0d8; border-radius: 10px;
+  font-size: 0.95rem; font-family: inherit; background: #fff; transition: border-color 0.3s;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: var(--orange); }
+.form-group textarea { min-height: 100px; resize: vertical; }
+
+.dynamic-list { display: flex; flex-direction: column; gap: 0.75rem; }
+.dynamic-item { background: #fff; border: 2px solid #e8e0d8; border-radius: 12px; padding: 1rem; position: relative; }
+.dynamic-item .remove-btn { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; border: none; background: #fee; color: #e74c3c; cursor: pointer; font-size: 1rem; }
+.dynamic-item .remove-btn:hover { background: #fdd; }
+.add-btn { padding: 10px 16px; border: 2px dashed var(--green); background: transparent; color: var(--green); border-radius: 10px; cursor: pointer; font-weight: 600; font-size: 0.9rem; margin-top: 0.5rem; }
+.add-btn:hover { background: rgba(30,166,120,0.05); }
+
+/* Status */
+.status { position: fixed; bottom: 20px; right: 20px; padding: 12px 24px; border-radius: 50px; color: #fff; font-weight: 600; font-size: 0.9rem; display: none; z-index: 999; }
+.status.success { background: var(--green); display: block; }
+.status.error { background: #e74c3c; display: block; }
+.status.info { background: #3498db; display: block; }
+
+@media (max-width: 600px) { .header { padding: 1rem; } .header h1 { font-size: 1.1rem; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✏ 网站内容编辑器</h1>
+  <div class="header-actions">
+    <button class="btn btn-token" onclick="showTokenModal()">🔑 设置 Token</button>
+    <button class="btn btn-save" onclick="saveContent()">💾 保存并发布</button>
+  </div>
+</div>
+
+<div class="tabs" id="tabBar">
+  <div class="tab active" data-tab="hero">首页大图</div>
+  <div class="tab" data-tab="about">关于我</div>
+  <div class="tab" data-tab="skills">技能标签</div>
+  <div class="tab" data-tab="projects">项目作品</div>
+  <div class="tab" data-tab="contact">联系方式</div>
+</div>
+
+<div class="editor" id="editorContainer">
+  <div id="statusMsg" class="status"></div>
+  <p style="text-align:center;padding:3rem;color:#999;" id="loadingHint">正在加载内容…</p>
+</div>
+
+<!-- Token Modal -->
+<div class="modal" id="tokenModal">
+  <div class="modal-box">
+    <h3>🔑 设置 GitHub Token</h3>
+    <p>需要一个 <b>Fine-grained Personal Access Token</b>：</p>
+    <p>1. 打开 <a href="https://github.com/settings/tokens?type=beta" target="_blank">github.com/settings/tokens</a></p>
+    <p>2. 点击 <b>Generate new token</b></p>
+    <p>3. Repository access 选 <b>Only select repositories</b> → 选 <b>thienbach2748-svg/personal-site</b></p>
+    <p>4. Permissions: <b>Contents</b> → Read and write</p>
+    <p>5. 生成后粘贴到下方：</p>
+    <input type="password" id="tokenInput" placeholder="github_pat_xxxxxxxxxxxxx">
+    <div style="display:flex;gap:0.5rem;">
+      <button class="btn btn-save" onclick="saveToken()" style="flex:1;">保存</button>
+      <button class="btn btn-token" onclick="closeTokenModal()" style="flex:1;color:#999;border-color:#ccc;">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== State =====
+let token = localStorage.getItem('gh_token') || '';
+let currentTab = 'hero';
+let contentData = {};
+
+// ===== Init =====
+document.addEventListener('DOMContentLoaded', async () => {
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentTab = tab.dataset.tab;
+      renderEditor();
+    });
+  });
+
+  if (!token) {
+    document.getElementById('loadingHint').textContent = '请先点击上方 🔑设置 Token 按钮配置 GitHub Token';
+    showTokenModal();
+    return;
+  }
+  await loadAllContent();
+});
+
+// ===== Token =====
+function showTokenModal() { document.getElementById('tokenModal').classList.add('show'); }
+function closeTokenModal() { document.getElementById('tokenModal').classList.remove('show'); }
+function saveToken() {
+  token = document.getElementById('tokenInput').value.trim();
+  if (!token) return alert('请输入 Token');
+  localStorage.setItem('gh_token', token);
+  closeTokenModal();
+  showStatus('Token 已保存', 'success');
+  loadAllContent();
+}
+
+// ===== Load =====
+async function loadAllContent() {
+  const files = ['hero', 'about', 'skills', 'projects', 'contact'];
+  document.getElementById('loadingHint').style.display = 'block';
+  try {
+    for (const f of files) {
+      const res = await fetch(`https://api.github.com/repos/thienbach2748-svg/personal-site/contents/content/${f}.json`, {
+        headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+      });
+      if (!res.ok) throw new Error(`Failed to load ${f}: ${res.status}`);
+      const data = await res.json();
+      contentData[f] = JSON.parse(atob(data.content));
+    }
+    document.getElementById('loadingHint').style.display = 'none';
+    renderEditor();
+  } catch (e) {
+    document.getElementById('loadingHint').textContent = '加载失败: ' + e.message + ' （Token 可能过期或无权限）';
+    showStatus('加载失败，请检查 Token', 'error');
+  }
+}
+
+// ===== Render =====
+function renderEditor() {
+  const container = document.getElementById('editorContainer');
+  if (!contentData[currentTab]) return;
+
+  const data = contentData[currentTab];
+  let html = '';
+
+  switch (currentTab) {
+    case 'hero':
+      html = formGroup('标签文字', 'tag', data.tag) +
+        formGroup('名字', 'name', data.name) +
+        listField('打字机短语', 'phrases', data.phrases, '短语') +
+        formGroup('按钮1文字', 'btn1Text', data.btn1Text) +
+        formGroup('按钮2文字', 'btn2Text', data.btn2Text);
+      break;
+
+    case 'about':
+      html = formGroup('标题', 'title', data.title) +
+        cardList('卡片列表', 'cards', data.cards, [
+          { key: 'icon', label: '图标Emoji', type: 'text' },
+          { key: 'title', label: '卡片标题', type: 'text' },
+          { key: 'text', label: '卡片描述', type: 'textarea' }
+        ]);
+      break;
+
+    case 'skills':
+      html = formGroup('标题', 'title', data.title) +
+        skillCategories('分类列表', 'categories', data.categories);
+      break;
+
+    case 'projects':
+      html = formGroup('标题', 'title', data.title) +
+        cardList('项目列表', 'items', data.items, [
+          { key: 'title', label: '项目标题', type: 'text' },
+          { key: 'text', label: '项目描述', type: 'textarea' },
+          { key: 'tags', label: '标签（逗号分隔）', type: 'tags' }
+        ]);
+      break;
+
+    case 'contact':
+      html = formGroup('标题', 'title', data.title) +
+        formGroup('副标题', 'subtitle', data.subtitle) +
+        cardList('联系链接', 'links', data.links, [
+          { key: 'icon', label: '图标Emoji', type: 'text' },
+          { key: 'text', label: '显示文字', type: 'text' },
+          { key: 'url', label: '链接URL', type: 'text' }
+        ]);
+      break;
+  }
+
+  container.innerHTML = `<div id="statusMsg" class="status"></div><div class="section active">${html}</div>`;
+}
+
+// ===== Form Helpers =====
+function formGroup(label, key, value) {
+  const type = typeof value === 'string' && value.length > 60 ? 'textarea' : 'text';
+  const input = type === 'textarea'
+    ? `<textarea data-key="${key}" rows="4">${esc(value)}</textarea>`
+    : `<input type="text" data-key="${key}" value="${esc(value)}">`;
+  return `<div class="form-group"><label>${label}</label>${input}</div>`;
+}
+
+function listField(label, key, list, itemLabel) {
+  return `<div class="form-group"><label>${label}</label><div class="dynamic-list" data-key="${key}">
+    ${list.map((item, i) => `<div class="dynamic-item">
+      <input type="text" value="${esc(item)}" data-idx="${i}">
+      <button class="remove-btn" onclick="removeItem(this, '${key}')">×</button>
+    </div>`).join('')}
+  </div><button class="add-btn" onclick="addItem(this, '${key}', '${itemLabel}')">+ 添加${itemLabel}</button></div>`;
+}
+
+function cardList(label, key, items, fields) {
+  return `<div class="form-group"><label>${label}</label><div class="dynamic-list" data-key="${key}">
+    ${items.map((item, i) => `<div class="dynamic-item">
+      ${fields.map(f => {
+        if (f.type === 'tags') {
+          const tags = item[f.key] || [];
+          const tagStr = Array.isArray(tags) ? tags.join(', ') : tags;
+          return `<input type="text" value="${esc(tagStr)}" data-idx="${i}" data-field="${f.key}" placeholder="${f.label}">`;
+        }
+        if (f.type === 'textarea') {
+          return `<textarea rows="3" data-idx="${i}" data-field="${f.key}" placeholder="${f.label}">${esc(item[f.key] || '')}</textarea>`;
+        }
+        return `<input type="text" value="${esc(item[f.key] || '')}" data-idx="${i}" data-field="${f.key}" placeholder="${f.label}">`;
+      }).join('')}
+      <button class="remove-btn" onclick="removeItem(this, '${key}')">×</button>
+    </div>`).join('')}
+  </div><button class="add-btn" onclick="addCard(this, '${key}')">+ 添加</button></div>`;
+}
+
+function skillCategories(label, key, categories) {
+  return `<div class="form-group"><label>${label}</label><div class="dynamic-list" data-key="${key}">
+    ${categories.map((cat, i) => `<div class="dynamic-item">
+      <input type="text" value="${esc(cat.name)}" data-idx="${i}" data-field="name" placeholder="分类名" style="margin-bottom:8px;">
+      <select data-idx="${i}" data-field="color" style="margin-bottom:8px;width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;">
+        <option value="orange" ${cat.color==='orange'?'selected':''}>🟠 橙色</option>
+        <option value="green" ${cat.color==='green'?'selected':''}>🟢 绿色</option>
+      </select>
+      <div class="dynamic-list" style="margin-top:8px;">
+        ${(cat.tags||[]).map((tag, j) => `<div class="dynamic-item" style="padding:0.5rem;">
+          <input type="text" value="${esc(tag)}" data-idx="${i}" data-field="tags" data-tagidx="${j}" placeholder="标签名">
+          <button class="remove-btn" onclick="removeTag(this, ${i})" style="top:4px;right:4px;">×</button>
+        </div>`).join('')}
+      </div>
+      <button class="add-btn" style="font-size:0.8rem;" onclick="addTag(this, ${i})">+ 添加标签</button>
+      <button class="remove-btn" onclick="removeItem(this, '${key}')">×</button>
+    </div>`).join('')}
+  </div><button class="add-btn" onclick="addSkillCategory(this, '${key}')">+ 添加分类</button></div>`;
+}
+
+// ===== Data Manipulation =====
+function collectFormData() {
+  const section = document.querySelector('.section.active');
+  if (!section) return;
+
+  const data = contentData[currentTab];
+
+  // Simple fields
+  section.querySelectorAll('[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    if (typeof data[key] === 'string') data[key] = el.value;
+  });
+
+  // Dynamic lists (phrases, etc.)
+  section.querySelectorAll('.dynamic-list[data-key]').forEach(list => {
+    const key = list.dataset.key;
+    if (!data[key]) return;
+
+    // Simple string list (phrases)
+    const inputs = list.querySelectorAll('input:not([data-field])');
+    if (inputs.length > 0 && Array.isArray(data[key])) {
+      data[key] = Array.from(inputs).map(inp => inp.value);
+    }
+  });
+
+  // Cards (items, cards, links)
+  section.querySelectorAll('.dynamic-list[data-key]').forEach(list => {
+    const key = list.dataset.key;
+    if (!data[key] || !Array.isArray(data[key])) return;
+
+    const items = list.querySelectorAll('.dynamic-item');
+    const newData = [];
+
+    items.forEach((item, idx) => {
+      const obj = data[key][idx] ? { ...data[key][idx] } : {};
+      item.querySelectorAll('[data-field]').forEach(field => {
+        const f = field.dataset.field;
+        if (f === 'tags') {
+          obj[f] = field.value.split(',').map(t => t.trim()).filter(Boolean);
+        } else {
+          obj[f] = field.value;
+        }
+      });
+      // Handle tags within skill categories
+      item.querySelectorAll('[data-tagidx]').forEach(tagInput => {
+        if (!obj.tags) obj.tags = [];
+        obj.tags[parseInt(tagInput.dataset.tagidx)] = tagInput.value;
+      });
+      newData.push(obj);
+    });
+    data[key] = newData;
+  });
+}
+
+// ===== Save =====
+async function saveContent() {
+  if (!token) { showTokenModal(); return; }
+  collectFormData();
+  showStatus('正在保存…', 'info');
+
+  const file = currentTab;
+  try {
+    // Get current file SHA
+    const getRes = await fetch(`https://api.github.com/repos/thienbach2748-svg/personal-site/contents/content/${file}.json`, {
+      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' }
+    });
+    const getData = await getRes.json();
+    const sha = getData.sha;
+
+    // Update file
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(contentData[file], null, 2))));
+    const putRes = await fetch(`https://api.github.com/repos/thienbach2748-svg/personal-site/contents/content/${file}.json`, {
+      method: 'PUT',
+      headers: { Authorization: `token ${token}`, Accept: 'application/vnd.github.v3+json' },
+      body: JSON.stringify({
+        message: `Update ${file} via editor`,
+        content: content,
+        sha: sha
+      })
+    });
+
+    if (!putRes.ok) {
+      const err = await putRes.json();
+      throw new Error(err.message || '保存失败');
+    }
+
+    showStatus('已保存！1-2分钟后网站自动更新', 'success');
+  } catch (e) {
+    showStatus('保存失败: ' + e.message, 'error');
+  }
+}
+
+// ===== Add/Remove =====
+function removeItem(btn, key) { btn.closest('.dynamic-item').remove(); }
+function addItem(btn, key, label) {
+  const list = btn.previousElementSibling;
+  const idx = list.querySelectorAll('.dynamic-item').length;
+  const div = document.createElement('div');
+  div.className = 'dynamic-item';
+  div.innerHTML = `<input type="text" value="" data-idx="${idx}"><button class="remove-btn" onclick="removeItem(this, '${key}')">×</button>`;
+  list.appendChild(div);
+}
+function addCard(btn, key) {
+  const list = btn.previousElementSibling;
+  const item = contentData[currentTab][key][0] || {};
+  const template = {};
+  Object.keys(item).forEach(k => {
+    if (Array.isArray(item[k])) template[k] = [];
+    else template[k] = '';
+  });
+  contentData[currentTab][key].push(template);
+  renderEditor();
+}
+function removeTag(btn, catIdx) {
+  const item = btn.closest('.dynamic-item');
+  const input = item.querySelector('input');
+  input.value = '';
+}
+function addTag(btn, catIdx) {
+  const list = btn.previousElementSibling;
+  const div = document.createElement('div');
+  div.className = 'dynamic-item';
+  div.style.cssText = 'padding:0.5rem;';
+  div.innerHTML = `<input type="text" value="" data-idx="${catIdx}" data-field="tags" data-tagidx="${list.children.length}" placeholder="标签名"><button class="remove-btn" style="top:4px;right:4px;" onclick="this.closest('.dynamic-item').remove()">×</button>`;
+  list.appendChild(div);
+}
+function addSkillCategory(btn, key) {
+  contentData[key].push({ name: '', color: 'orange', tags: [] });
+  renderEditor();
+}
+
+// ===== Utilities =====
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showStatus(msg, type) {
+  const el = document.createElement('div');
+  el.className = 'status ' + type;
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 3000);
+}
+</script>
+</body>
+</html>
