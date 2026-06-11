@@ -155,7 +155,7 @@ async function loadAllContent() {
       });
       if (!res.ok) throw new Error(`Failed to load ${f}: ${res.status}`);
       const data = await res.json();
-      contentData[f] = JSON.parse(atob(data.content));
+      contentData[f] = JSON.parse(decodeURIComponent(escape(atob(data.content))));
     }
     document.getElementById('loadingHint').style.display = 'none';
     renderEditor();
